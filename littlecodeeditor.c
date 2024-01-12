@@ -7,7 +7,9 @@
 #define DEFAULT_WIN_HEIGHT 720
 
 
-const char *get_all_assci_char() {
+SDL_Surface *create_regular_font_surface(int ptsize) {
+    TTF_Font *font = TTF_OpenFont("fonts/Hack-Regular.ttf", ptsize);
+
     uint8_t *all_assci_char = (uint8_t*)malloc(96);
     uint8_t c = 0x20;
     while (c != 0x7f) {
@@ -16,7 +18,24 @@ const char *get_all_assci_char() {
     }
     *(all_assci_char + (c - 0x20)) = 0;
 
-    return (const char*)all_assci_char;
+    SDL_Color fg;
+    SDL_Color bg;
+
+    fg.r = 0xff;
+    fg.g = 0xff;
+    fg.b = 0xff;
+    fg.a = 0xff;
+    bg.r = 0x27;
+    bg.g = 0x27;
+    bg.b = 0x27;
+    bg.a = 0xff;
+
+    SDL_Surface *font_surface = TTF_RenderUTF8_LCD(font, (const char *)all_assci_char, fg, bg);
+
+    TTF_CloseFont(font);
+    free((void *)all_assci_char);
+
+    return font_surface;
 }
 
 int show_char(int row, int col, uint8_t c, SDL_Renderer *renderer, SDL_Texture *font_texture, SDL_Surface *font_surface) {
@@ -43,30 +62,15 @@ int main(int argc, char* argv[]) {
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Window *window = SDL_CreateWindow("Text Editor",
                             SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                            1280, 720, 0);
+                            DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT, 0);
 
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_RenderClear(renderer);
 
     TTF_Init();
 
-    TTF_Font *default_font = TTF_OpenFont("default-fonts/Hack-Regular.ttf", 60);
+    SDL_Surface *font_surface = create_regular_font_surface(30);
 
-    SDL_Color fg;
-    SDL_Color bg;
-
-    fg.r = 0xff;
-    fg.g = 0xff;
-    fg.b = 0xff;
-    fg.a = 0xff;
-
-    bg.r = 0x27;
-    bg.g = 0x27;
-    bg.b = 0x27;
-    bg.a = 0xff;
-
-
-    SDL_Surface *font_surface = TTF_RenderUTF8_LCD(default_font, get_all_assci_char(), fg, bg);
     SDL_Texture *font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
     show_char(1, 1, 'K', renderer, font_texture, font_surface);
     show_char(2, 1, 'A', renderer, font_texture, font_surface);
@@ -77,10 +81,29 @@ int main(int argc, char* argv[]) {
 
     SDL_Delay(5000);
 
+    while (1) {
+        SDL_Event event;
+        while(SDL_PollEvent(&event)){
+            switch( event.type ){
+            case SDL_KEYDOWN:
+                printf("Key press detected\n");
+                break;
+
+            case SDL_KEYUP:
+                printf("Key release detected\n");
+                exit(1);
+                break;
+
+            default:
+                break;
+            }
+        }
+        SDL_Delay(100);
+    }
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
 
-    TTF_CloseFont(default_font);
     TTF_Quit();
     SDL_Quit();
     return 0;
