@@ -14,13 +14,6 @@ int main(int argc, char* argv[]) {
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_RenderClear(renderer);
 
-    SDL_Texture *texture = SDL_CreateTexture(renderer,
-                            SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING,
-                            DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT);
-
-    SDL_Surface *window_surface = SDL_GetWindowSurface(window);
-
-
     TTF_Init();
 
     TTF_Font *default_font = TTF_OpenFont("default-fonts/Hack-Regular.ttf", 40);
@@ -36,17 +29,12 @@ int main(int argc, char* argv[]) {
     bg.b = 0xff;
     bg.a = 0xff;
 
-    SDL_Surface *surface_1 = TTF_RenderUTF8_LCD(default_font, "Hello World", fg, bg);
-    SDL_LockSurface(surface_1);
-    SDL_Surface *surface_2 = SDL_ConvertSurfaceFormat(surface_1, SDL_PIXELFORMAT_RGBA8888, 0);
-    SDL_LockSurface(surface_2);
 
-    SDL_Rect r = surface_2->clip_rect;
-    r.x += 100;
-    r.y += 100;
-    SDL_UpdateTexture(texture, &(surface_2->clip_rect), surface_2->pixels, surface_2->pitch);
+    SDL_Surface *font_surface = TTF_RenderUTF8_LCD(default_font, "Hello World", fg, bg);
+    SDL_Texture *font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
+    SDL_Rect r;
 
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderCopy(renderer, font_texture, NULL, &(font_surface->clip_rect));
     SDL_RenderPresent(renderer);
 
     SDL_Delay(5000);
