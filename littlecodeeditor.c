@@ -32,8 +32,8 @@ int show_char(int row, int col, uint8_t c, SDL_Renderer *renderer, SDL_Texture *
     r1.w = fw;
     r1.h = fh;
 
-    r2.x = 0;
-    r2.y = 0;
+    r2.x = fw * row;
+    r2.y = fh * col;
     r2.w = fw;
     r2.h = fh;
     SDL_RenderCopy(renderer, font_texture, &r1, &r2);
@@ -68,7 +68,10 @@ int main(int argc, char* argv[]) {
 
     SDL_Surface *font_surface = TTF_RenderUTF8_LCD(default_font, get_all_assci_char(), fg, bg);
     SDL_Texture *font_texture = SDL_CreateTextureFromSurface(renderer, font_surface);
-    show_char(0, 0, 'K', renderer, font_texture, font_surface);
+    show_char(1, 1, 'K', renderer, font_texture, font_surface);
+    show_char(2, 1, 'A', renderer, font_texture, font_surface);
+    show_char(3, 1, 'S', renderer, font_texture, font_surface);
+    show_char(4, 1, '*', renderer, font_texture, font_surface);
 
     SDL_RenderPresent(renderer);
 
