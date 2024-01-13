@@ -6,15 +6,16 @@
 #define DEFAULT_WIN_WIDTH 1280
 #define DEFAULT_WIN_HEIGHT 720
 
-#define TOTAL_ASCII_PRINTABLE_CHARS 95
+#define ASCII_PRINTABLE_CHARS_COUNT 95
+
+#define ASCII_RENDERER_CHARS_COUNT 1048576
 
 typedef struct {
     int w;
     int h;
     int fw;
     int fh;
-    int rows;
-    int cols;
+    uint8_t *chars;
     SDL_Renderer *renderer;
     SDL_Surface *regular_font_surface;
     SDL_Texture *regular_font_texture;
@@ -23,7 +24,7 @@ typedef struct {
 SDL_Surface *create_regular_ascii_font_surface(int ptsize) {
     TTF_Font *font = TTF_OpenFont("fonts/Hack-Regular.ttf", ptsize);
 
-    uint8_t *printable_chars = (uint8_t*)malloc(TOTAL_ASCII_PRINTABLE_CHARS + 1);
+    uint8_t *printable_chars = (uint8_t*)malloc(ASCII_PRINTABLE_CHARS_COUNT + 1);
     uint8_t c = 0x20;
     while (c != 0x7f) {
         *(printable_chars + (c - 0x20)) = c;
@@ -54,13 +55,14 @@ SDL_Surface *create_regular_ascii_font_surface(int ptsize) {
 ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize) {
     ASCII_RENDERER *ascii_rd = (ASCII_RENDERER *)malloc(sizeof(ASCII_RENDERER));
 
+    SDL_GetWindowSize(window, &(ascii_rd->w), &(ascii_rd->h));
+
     ascii_rd->renderer = SDL_CreateRenderer(window, -1, 0);
     ascii_rd->regular_font_surface = create_regular_ascii_font_surface(ptsize);
-    ascii_rd->fw = (ascii_rd->regular_font_surface->w) / TOTAL_ASCII_PRINTABLE_CHARS;
+    ascii_rd->fw = (ascii_rd->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
     ascii_rd->fh = (ascii_rd->regular_font_surface->h);
     ascii_rd->regular_font_texture = SDL_CreateTextureFromSurface(ascii_rd->renderer, ascii_rd->regular_font_surface);
 
-    SDL_GetWindowSize(window, &(ascii_rd->w), &(ascii_rd->h));
     return ascii_rd;
 }
 
@@ -102,9 +104,9 @@ int main(int argc, char* argv[]) {
 
     ASCII_RENDERER *ascii_rd = create_assci_renderer(window, 40);
     ascii_renderer_clear(ascii_rd);
-    ascii_renderer_print_char(ascii_rd, 'H', 1, 1);
+    ascii_renderer_print_char(ascii_rd, 'H', 0, 1);
+    ascii_renderer_print_char(ascii_rd, 'i', 1, 1);
     ascii_renderer_print_char(ascii_rd, 'i', 2, 1);
-    ascii_renderer_print_char(ascii_rd, 'i', 3, 1);
     ascii_renderer_present(ascii_rd);
 
     while (1) {
