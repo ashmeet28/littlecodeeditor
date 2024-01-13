@@ -15,7 +15,7 @@ typedef struct {
     int h;
     int fw;
     int fh;
-    uint8_t *chars;
+    uint8_t *char_grid;
     SDL_Renderer *renderer;
     SDL_Surface *regular_font_surface;
     SDL_Texture *regular_font_texture;
@@ -27,10 +27,10 @@ SDL_Surface *create_regular_ascii_font_surface(int ptsize) {
     uint8_t *printable_chars = (uint8_t*)malloc(ASCII_PRINTABLE_CHARS_COUNT + 1);
     uint8_t c = 0x20;
     while (c != 0x7f) {
-        *(printable_chars + (c - 0x20)) = c;
+        printable_chars[c - 0x20] = c;
         c++;
     }
-    *(printable_chars + (c - 0x20)) = 0;
+    printable_chars[c - 0x20] = 0;
 
     SDL_Color fg;
     SDL_Color bg;
@@ -61,8 +61,13 @@ ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize) {
     ascii_rd->regular_font_surface = create_regular_ascii_font_surface(ptsize);
     ascii_rd->fw = (ascii_rd->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
     ascii_rd->fh = (ascii_rd->regular_font_surface->h);
-    ascii_rd->regular_font_texture = SDL_CreateTextureFromSurface(ascii_rd->renderer, ascii_rd->regular_font_surface);
+    ascii_rd->regular_font_texture = SDL_CreateTextureFromSurface(
+                                        ascii_rd->renderer, ascii_rd->regular_font_surface);
 
+    ascii_rd->char_grid = (uint8_t *)malloc(ASCII_RENDERER_CHARS_COUNT);
+    for(int i = 0; i < ASCII_RENDERER_CHARS_COUNT; i++) {
+        ascii_rd->char_grid[i] = 0x20;
+    }
     return ascii_rd;
 }
 
@@ -86,11 +91,35 @@ void ascii_renderer_print_char(ASCII_RENDERER *ascii_rd, uint8_t c, int x, int y
     SDL_RenderCopy(ascii_rd->renderer, ascii_rd->regular_font_texture, &r1, &r2);
 }
 
-void ascii_renderer_clear(ASCII_RENDERER *ascii_rd) {
-    SDL_RenderClear(ascii_rd->renderer);
+int ascii_renderer_cols(ASCII_RENDERER *ascii_rd) {
+    return ascii_rd->w / ascii_rd->fw;
+}
+
+int ascii_renderer_rows(ASCII_RENDERER *ascii_rd) {
+    return ascii_rd->h / ascii_rd->fh;
+}
+
+void ascii_renderer_set_char(ASCII_RENDERER *ascii_rd, uint8_t c, int x, int y) {
+    ascii_rd->char_grid[ascii_renderer_cols(ascii_rd) * y + x] = c;
+}
+
+uint8_t ascii_renderer_get_char(ASCII_RENDERER *ascii_rd, int x, int y) {
+   return ascii_rd->char_grid[(ascii_renderer_cols(ascii_rd) * y) + x];
 }
 
 void ascii_renderer_present(ASCII_RENDERER *ascii_rd) {
+    SDL_RenderClear(ascii_rd->renderer);
+
+    int rows = ascii_renderer_rows(ascii_rd);
+    int cols = ascii_renderer_cols(ascii_rd);
+
+    for(int y = 0; y < rows; y++) {
+        for(int x = 0; x < cols; x++) {
+            ascii_renderer_print_char(ascii_rd,
+                ascii_renderer_get_char(ascii_rd, x, y), x, y);
+        }
+    }
+
     SDL_RenderPresent(ascii_rd->renderer);
 }
 
@@ -103,10 +132,10 @@ int main(int argc, char* argv[]) {
     TTF_Init();
 
     ASCII_RENDERER *ascii_rd = create_assci_renderer(window, 40);
-    ascii_renderer_clear(ascii_rd);
-    ascii_renderer_print_char(ascii_rd, 'H', 0, 1);
-    ascii_renderer_print_char(ascii_rd, 'i', 1, 1);
-    ascii_renderer_print_char(ascii_rd, 'i', 2, 1);
+    ascii_renderer_set_char(ascii_rd, 'a', 1, 3);
+    ascii_renderer_present(ascii_rd);
+    SDL_Delay(1000);
+    ascii_renderer_set_char(ascii_rd, 'b', 1, 3);
     ascii_renderer_present(ascii_rd);
 
     while (1) {
