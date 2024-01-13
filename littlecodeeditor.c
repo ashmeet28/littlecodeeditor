@@ -3,12 +3,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
+
 #define DEFAULT_WIN_WIDTH 1280
 #define DEFAULT_WIN_HEIGHT 720
 
 #define ASCII_PRINTABLE_CHARS_COUNT 95
 
-#define ASCII_RENDERER_CHARS_COUNT 1048576
+#define ASCII_RENDERER_CHAR_GRID_CAPACITY 1048576
 
 typedef struct {
     int w;
@@ -64,10 +66,11 @@ ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize) {
     ascii_rd->regular_font_texture = SDL_CreateTextureFromSurface(
                                         ascii_rd->renderer, ascii_rd->regular_font_surface);
 
-    ascii_rd->char_grid = (uint8_t *)malloc(ASCII_RENDERER_CHARS_COUNT);
-    for(int i = 0; i < ASCII_RENDERER_CHARS_COUNT; i++) {
+    ascii_rd->char_grid = (uint8_t *)malloc(ASCII_RENDERER_CHAR_GRID_CAPACITY);
+    for(int i = 0; i < ASCII_RENDERER_CHAR_GRID_CAPACITY; i++) {
         ascii_rd->char_grid[i] = 0x20;
     }
+
     return ascii_rd;
 }
 
@@ -132,32 +135,16 @@ int main(int argc, char* argv[]) {
     TTF_Init();
 
     ASCII_RENDERER *ascii_rd = create_assci_renderer(window, 40);
-    ascii_renderer_set_char(ascii_rd, 'a', 1, 3);
-    ascii_renderer_present(ascii_rd);
-    SDL_Delay(1000);
-    ascii_renderer_set_char(ascii_rd, 'b', 1, 3);
-    ascii_renderer_present(ascii_rd);
+    
+    char c[] = "Hello World";
 
-    while (1) {
-        SDL_Event event;
-        while(SDL_PollEvent(&event)){
-            switch( event.type ){
-            case SDL_KEYDOWN:
-                printf("Key press detected\n");
-                break;
-
-            case SDL_KEYUP:
-                printf("Key release detected\n");
-                exit(1);
-                break;
-
-            default:
-                break;
-            }
-        }
-        SDL_Delay(100);
+    for (int i = 0; i < ARRAY_SIZE(c) - 1; i++) {
+        ascii_renderer_set_char(ascii_rd, c[i], i, 0);
+        ascii_renderer_present(ascii_rd);
+        SDL_Delay(300);
     }
 
+    TTF_Quit();
     SDL_Quit();
     return 0;
 }
