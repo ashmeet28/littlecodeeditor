@@ -23,7 +23,8 @@ typedef struct {
     SDL_Texture *regular_font_texture;
 } ASCII_RENDERER;
 
-SDL_Surface *create_regular_ascii_font_surface(int ptsize) {
+SDL_Surface *create_regular_ascii_font_surface(int ptsize)
+{
     TTF_Font *font = TTF_OpenFont("fonts/Hack-Regular.ttf", ptsize);
 
     uint8_t *printable_chars = (uint8_t*)malloc(ASCII_PRINTABLE_CHARS_COUNT + 1);
@@ -54,7 +55,8 @@ SDL_Surface *create_regular_ascii_font_surface(int ptsize) {
     return font_surface;
 }
 
-ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize) {
+ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize)
+{
     ASCII_RENDERER *asc_rend = (ASCII_RENDERER *)malloc(sizeof(ASCII_RENDERER));
 
     SDL_GetWindowSize(window, &(asc_rend->w), &(asc_rend->h));
@@ -63,18 +65,19 @@ ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize) {
     asc_rend->regular_font_surface = create_regular_ascii_font_surface(ptsize);
     asc_rend->fw = (asc_rend->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
     asc_rend->fh = (asc_rend->regular_font_surface->h);
-    asc_rend->regular_font_texture = SDL_CreateTextureFromSurface(
-                                        asc_rend->main_renderer, asc_rend->regular_font_surface);
+    asc_rend->regular_font_texture = SDL_CreateTextureFromSurface(asc_rend->main_renderer,
+                                                                    asc_rend->regular_font_surface);
 
     asc_rend->char_grid = (uint8_t *)malloc(ASCII_RENDERER_CHAR_GRID_CAP);
-    for(int i = 0; i < ASCII_RENDERER_CHAR_GRID_CAP; i++) {
+    for (int i = 0; i < ASCII_RENDERER_CHAR_GRID_CAP; i++) {
         asc_rend->char_grid[i] = 0x20;
     }
 
     return asc_rend;
 }
 
-void ascii_renderer_print_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y) {
+void ascii_renderer_print_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y)
+{
     SDL_Rect r1;
     SDL_Rect r2;
 
@@ -94,43 +97,48 @@ void ascii_renderer_print_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y
     SDL_RenderCopy(asc_rend->main_renderer, asc_rend->regular_font_texture, &r1, &r2);
 }
 
-int ascii_renderer_cols(ASCII_RENDERER *asc_rend) {
+int ascii_renderer_cols(ASCII_RENDERER *asc_rend)
+{
     return asc_rend->w / asc_rend->fw;
 }
 
-int ascii_renderer_rows(ASCII_RENDERER *asc_rend) {
+int ascii_renderer_rows(ASCII_RENDERER *asc_rend)
+{
     return asc_rend->h / asc_rend->fh;
 }
 
-void ascii_renderer_set_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y) {
+void ascii_renderer_set_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y)
+{
     asc_rend->char_grid[ascii_renderer_cols(asc_rend) * y + x] = c;
 }
 
-uint8_t ascii_renderer_get_char(ASCII_RENDERER *asc_rend, int x, int y) {
+uint8_t ascii_renderer_get_char(ASCII_RENDERER *asc_rend, int x, int y)
+{
    return asc_rend->char_grid[(ascii_renderer_cols(asc_rend) * y) + x];
 }
 
-void ascii_renderer_present(ASCII_RENDERER *asc_rend) {
+void ascii_renderer_present(ASCII_RENDERER *asc_rend)
+{
     SDL_RenderClear(asc_rend->main_renderer);
 
     int rows = ascii_renderer_rows(asc_rend);
     int cols = ascii_renderer_cols(asc_rend);
 
-    for(int y = 0; y < rows; y++) {
-        for(int x = 0; x < cols; x++) {
-            ascii_renderer_print_char(asc_rend,
-                ascii_renderer_get_char(asc_rend, x, y), x, y);
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < cols; x++) {
+            ascii_renderer_print_char(asc_rend, ascii_renderer_get_char(asc_rend, x, y), x, y);
         }
     }
 
     SDL_RenderPresent(asc_rend->main_renderer);
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[])
+{
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
     SDL_Window *window = SDL_CreateWindow("Text Editor",
-                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                            DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT, 0);
+                                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                            DEFAULT_WIN_WIDTH, DEFAULT_WIN_HEIGHT, 0);
 
     TTF_Init();
 
