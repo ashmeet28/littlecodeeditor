@@ -109,7 +109,7 @@ int ascii_renderer_rows(ASCII_RENDERER *asc_rend)
 
 void ascii_renderer_set_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y)
 {
-    asc_rend->char_grid[ascii_renderer_cols(asc_rend) * y + x] = c;
+    asc_rend->char_grid[(ascii_renderer_cols(asc_rend) * y) + x] = c;
 }
 
 uint8_t ascii_renderer_get_char(ASCII_RENDERER *asc_rend, int x, int y)
@@ -133,6 +133,33 @@ void ascii_renderer_present(ASCII_RENDERER *asc_rend)
     SDL_RenderPresent(asc_rend->main_renderer);
 }
 
+void start_handling_keyboard_events(ASCII_RENDERER *asc_rend)
+{
+    int quit_loop = 0;
+    int i = 0;
+    while(!quit_loop) {
+        SDL_Event ev;
+        while (SDL_PollEvent(&ev)) {
+            switch (ev.type) {
+            case SDL_QUIT:
+                quit_loop = 1;
+                break;
+            case SDL_TEXTINPUT:
+                const char *t = ev.text.text;
+                size_t l = strlen(t);
+                if (l == 1 && t[0] >= 0x20 && t[0] <= 0x7e) {
+                    ascii_renderer_set_char(asc_rend, t[0], i, 0);
+                    i++;
+                    ascii_renderer_present(asc_rend);
+                }
+                break;
+            
+            }
+        }
+        SDL_Delay(100);
+    }
+}
+
 int main(int argc, char* argv[])
 {
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
@@ -143,14 +170,8 @@ int main(int argc, char* argv[])
     TTF_Init();
 
     ASCII_RENDERER *asc_rend = create_assci_renderer(window, 40);
-    
-    char c[] = "Hello World";
 
-    for (int i = 0; i < ARRAY_SIZE(c) - 1; i++) {
-        ascii_renderer_set_char(asc_rend, c[i], i, 0);
-        ascii_renderer_present(asc_rend);
-        SDL_Delay(300);
-    }
+    start_handling_keyboard_events(asc_rend);
 
     TTF_Quit();
     SDL_Quit();
