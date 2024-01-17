@@ -17,6 +17,9 @@ typedef struct {
     int h;
     int fw;
     int fh;
+    int cursor;
+    int offset_x;
+    int offset_y;
     uint8_t *char_buf;
     uint8_t *char_grid;
     SDL_Renderer *main_renderer;
@@ -66,6 +69,7 @@ L_EDITOR *create_assci_renderer(SDL_Window *window, int ptsize)
     l_ed->regular_font_surface = create_regular_ascii_font_surface(ptsize);
     l_ed->fw = (l_ed->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
     l_ed->fh = (l_ed->regular_font_surface->h);
+    l_ed->cursor = 0;
     l_ed->regular_font_texture = SDL_CreateTextureFromSurface(l_ed->main_renderer,
                                                                     l_ed->regular_font_surface);
 
@@ -73,6 +77,7 @@ L_EDITOR *create_assci_renderer(SDL_Window *window, int ptsize)
     for (int i = 0; i < L_EDITOR_CHAR_GRID_CAP; i++) {
         l_ed->char_grid[i] = 0x20;
     }
+    l_ed->char_buf = (uint8_t *)malloc(8000000);
 
     return l_ed;
 }
@@ -118,6 +123,23 @@ uint8_t l_editor_get_char(L_EDITOR *l_ed, int x, int y)
    return l_ed->char_grid[(l_editor_cols(l_ed) * y) + x];
 }
 
+void l_editor_put_char_buf_on_grid(L_EDITOR *l_ed)
+{
+    int x = 0;
+    int y = 0;
+    for (int i = 0; l_ed->char_buf[i] != 0; i++) {
+        if (l_ed->char_buf[i] == 0x0a){
+            x = 0;
+            y++;
+        } else {
+            if (x < l_editor_cols(l_ed) && y < l_editor_rows(l_ed)) {
+                l_editor_set_char(l_ed, l_ed->char_buf[i], x, y);
+                x++;
+            }
+        }
+    }
+}
+
 void l_editor_present(L_EDITOR *l_ed)
 {
     SDL_RenderClear(l_ed->main_renderer);
@@ -145,17 +167,21 @@ void start_handling_keyboard_events(L_EDITOR *l_ed)
             case SDL_QUIT:
                 quit_loop = 1;
                 break;
-            case SDL_TEXTINPUT:
-                if (strlen(ev.text.text) == 1 && (ev.text.text)[0] >= 0x20 && (ev.text.text)[0] <= 0x7e) {
-                    l_editor_set_char(l_ed, (ev.text.text)[0], i, 0);
-                    i++;
-                    l_editor_present(l_ed);
+            case SDL_KEYDOWN:
+                if (ev.key.keysym.scancode == SDL_SCANCODE_RETURN) {
+                    strcat(l_ed->char_buf, "\x0a");
                 }
                 break;
-            
+            case SDL_TEXTINPUT:
+                if (strlen(ev.text.text) == 1 && (ev.text.text)[0] >= 0x20 && (ev.text.text)[0] <= 0x7e) {
+                    strcat(l_ed->char_buf, ev.text.text);
+                    l_editor_put_char_buf_on_grid(l_ed);
+                }
+                break;
             }
+            l_editor_present(l_ed);
+            SDL_Delay(100);
         }
-        SDL_Delay(100);
     }
 }
 
