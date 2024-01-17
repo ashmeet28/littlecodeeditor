@@ -10,18 +10,19 @@
 
 #define ASCII_PRINTABLE_CHARS_COUNT 95
 
-#define ASCII_RENDERER_CHAR_GRID_CAP 1048576
+#define L_EDITOR_CHAR_GRID_CAP 1048576
 
 typedef struct {
     int w;
     int h;
     int fw;
     int fh;
+    uint8_t *char_buf;
     uint8_t *char_grid;
     SDL_Renderer *main_renderer;
     SDL_Surface *regular_font_surface;
     SDL_Texture *regular_font_texture;
-} ASCII_RENDERER;
+} L_EDITOR;
 
 SDL_Surface *create_regular_ascii_font_surface(int ptsize)
 {
@@ -55,34 +56,34 @@ SDL_Surface *create_regular_ascii_font_surface(int ptsize)
     return font_surface;
 }
 
-ASCII_RENDERER *create_assci_renderer(SDL_Window *window, int ptsize)
+L_EDITOR *create_assci_renderer(SDL_Window *window, int ptsize)
 {
-    ASCII_RENDERER *asc_rend = (ASCII_RENDERER *)malloc(sizeof(ASCII_RENDERER));
+    L_EDITOR *l_ed = (L_EDITOR *)malloc(sizeof(L_EDITOR));
 
-    SDL_GetWindowSize(window, &(asc_rend->w), &(asc_rend->h));
+    SDL_GetWindowSize(window, &(l_ed->w), &(l_ed->h));
 
-    asc_rend->main_renderer = SDL_CreateRenderer(window, -1, 0);
-    asc_rend->regular_font_surface = create_regular_ascii_font_surface(ptsize);
-    asc_rend->fw = (asc_rend->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
-    asc_rend->fh = (asc_rend->regular_font_surface->h);
-    asc_rend->regular_font_texture = SDL_CreateTextureFromSurface(asc_rend->main_renderer,
-                                                                    asc_rend->regular_font_surface);
+    l_ed->main_renderer = SDL_CreateRenderer(window, -1, 0);
+    l_ed->regular_font_surface = create_regular_ascii_font_surface(ptsize);
+    l_ed->fw = (l_ed->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
+    l_ed->fh = (l_ed->regular_font_surface->h);
+    l_ed->regular_font_texture = SDL_CreateTextureFromSurface(l_ed->main_renderer,
+                                                                    l_ed->regular_font_surface);
 
-    asc_rend->char_grid = (uint8_t *)malloc(ASCII_RENDERER_CHAR_GRID_CAP);
-    for (int i = 0; i < ASCII_RENDERER_CHAR_GRID_CAP; i++) {
-        asc_rend->char_grid[i] = 0x20;
+    l_ed->char_grid = (uint8_t *)malloc(L_EDITOR_CHAR_GRID_CAP);
+    for (int i = 0; i < L_EDITOR_CHAR_GRID_CAP; i++) {
+        l_ed->char_grid[i] = 0x20;
     }
 
-    return asc_rend;
+    return l_ed;
 }
 
-void ascii_renderer_print_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y)
+void l_editor_print_char(L_EDITOR *l_ed, uint8_t c, int x, int y)
 {
     SDL_Rect r1;
     SDL_Rect r2;
 
-    int fw = asc_rend->fw;
-    int fh = asc_rend->fh;
+    int fw = l_ed->fw;
+    int fh = l_ed->fh;
 
     r1.x = fw * (int)(c - 0x20);
     r1.y = 0;
@@ -94,46 +95,46 @@ void ascii_renderer_print_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y
     r2.w = fw;
     r2.h = fh;
 
-    SDL_RenderCopy(asc_rend->main_renderer, asc_rend->regular_font_texture, &r1, &r2);
+    SDL_RenderCopy(l_ed->main_renderer, l_ed->regular_font_texture, &r1, &r2);
 }
 
-int ascii_renderer_cols(ASCII_RENDERER *asc_rend)
+int l_editor_cols(L_EDITOR *l_ed)
 {
-    return asc_rend->w / asc_rend->fw;
+    return l_ed->w / l_ed->fw;
 }
 
-int ascii_renderer_rows(ASCII_RENDERER *asc_rend)
+int l_editor_rows(L_EDITOR *l_ed)
 {
-    return asc_rend->h / asc_rend->fh;
+    return l_ed->h / l_ed->fh;
 }
 
-void ascii_renderer_set_char(ASCII_RENDERER *asc_rend, uint8_t c, int x, int y)
+void l_editor_set_char(L_EDITOR *l_ed, uint8_t c, int x, int y)
 {
-    asc_rend->char_grid[(ascii_renderer_cols(asc_rend) * y) + x] = c;
+    l_ed->char_grid[(l_editor_cols(l_ed) * y) + x] = c;
 }
 
-uint8_t ascii_renderer_get_char(ASCII_RENDERER *asc_rend, int x, int y)
+uint8_t l_editor_get_char(L_EDITOR *l_ed, int x, int y)
 {
-   return asc_rend->char_grid[(ascii_renderer_cols(asc_rend) * y) + x];
+   return l_ed->char_grid[(l_editor_cols(l_ed) * y) + x];
 }
 
-void ascii_renderer_present(ASCII_RENDERER *asc_rend)
+void l_editor_present(L_EDITOR *l_ed)
 {
-    SDL_RenderClear(asc_rend->main_renderer);
+    SDL_RenderClear(l_ed->main_renderer);
 
-    int rows = ascii_renderer_rows(asc_rend);
-    int cols = ascii_renderer_cols(asc_rend);
+    int rows = l_editor_rows(l_ed);
+    int cols = l_editor_cols(l_ed);
 
     for (int y = 0; y < rows; y++) {
         for (int x = 0; x < cols; x++) {
-            ascii_renderer_print_char(asc_rend, ascii_renderer_get_char(asc_rend, x, y), x, y);
+            l_editor_print_char(l_ed, l_editor_get_char(l_ed, x, y), x, y);
         }
     }
 
-    SDL_RenderPresent(asc_rend->main_renderer);
+    SDL_RenderPresent(l_ed->main_renderer);
 }
 
-void start_handling_keyboard_events(ASCII_RENDERER *asc_rend)
+void start_handling_keyboard_events(L_EDITOR *l_ed)
 {
     int quit_loop = 0;
     int i = 0;
@@ -145,12 +146,10 @@ void start_handling_keyboard_events(ASCII_RENDERER *asc_rend)
                 quit_loop = 1;
                 break;
             case SDL_TEXTINPUT:
-                const char *t = ev.text.text;
-                size_t l = strlen(t);
-                if (l == 1 && t[0] >= 0x20 && t[0] <= 0x7e) {
-                    ascii_renderer_set_char(asc_rend, t[0], i, 0);
+                if (strlen(ev.text.text) == 1 && (ev.text.text)[0] >= 0x20 && (ev.text.text)[0] <= 0x7e) {
+                    l_editor_set_char(l_ed, (ev.text.text)[0], i, 0);
                     i++;
-                    ascii_renderer_present(asc_rend);
+                    l_editor_present(l_ed);
                 }
                 break;
             
@@ -169,9 +168,9 @@ int main(int argc, char* argv[])
 
     TTF_Init();
 
-    ASCII_RENDERER *asc_rend = create_assci_renderer(window, 40);
+    L_EDITOR *l_ed = create_assci_renderer(window, 40);
 
-    start_handling_keyboard_events(asc_rend);
+    start_handling_keyboard_events(l_ed);
 
     TTF_Quit();
     SDL_Quit();
