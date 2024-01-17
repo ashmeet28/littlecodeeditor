@@ -22,6 +22,7 @@ typedef struct {
     int offset_y;
     uint8_t *char_buf;
     uint8_t *char_grid;
+    uint8_t *current_char_grid;
     SDL_Renderer *main_renderer;
     SDL_Surface *regular_font_surface;
     SDL_Texture *regular_font_texture;
@@ -66,6 +67,7 @@ L_EDITOR *create_assci_renderer(SDL_Window *window, int ptsize)
     SDL_GetWindowSize(window, &(l_ed->w), &(l_ed->h));
 
     l_ed->main_renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_RenderClear(l_ed->main_renderer);
     l_ed->regular_font_surface = create_regular_ascii_font_surface(ptsize);
     l_ed->fw = (l_ed->regular_font_surface->w) / ASCII_PRINTABLE_CHARS_COUNT;
     l_ed->fh = (l_ed->regular_font_surface->h);
@@ -74,15 +76,18 @@ L_EDITOR *create_assci_renderer(SDL_Window *window, int ptsize)
                                                                     l_ed->regular_font_surface);
 
     l_ed->char_grid = (uint8_t *)malloc(L_EDITOR_CHAR_GRID_CAP);
+    l_ed->current_char_grid = (uint8_t *)malloc(L_EDITOR_CHAR_GRID_CAP);
+    
     for (int i = 0; i < L_EDITOR_CHAR_GRID_CAP; i++) {
         l_ed->char_grid[i] = 0x20;
     }
+
     l_ed->char_buf = (uint8_t *)malloc(8000000);
 
     return l_ed;
 }
 
-void l_editor_print_char(L_EDITOR *l_ed, uint8_t c, int x, int y)
+void l_editor_put_char_on_renderer(L_EDITOR *l_ed, uint8_t c, int x, int y)
 {
     SDL_Rect r1;
     SDL_Rect r2;
@@ -113,53 +118,59 @@ int l_editor_rows(L_EDITOR *l_ed)
     return l_ed->h / l_ed->fh;
 }
 
-void l_editor_set_char(L_EDITOR *l_ed, uint8_t c, int x, int y)
-{
-    l_ed->char_grid[(l_editor_cols(l_ed) * y) + x] = c;
-}
-
-uint8_t l_editor_get_char(L_EDITOR *l_ed, int x, int y)
-{
-   return l_ed->char_grid[(l_editor_cols(l_ed) * y) + x];
-}
-
 void l_editor_put_char_buf_on_grid(L_EDITOR *l_ed)
 {
     int x = 0;
     int y = 0;
+    int rows = l_editor_rows(l_ed);
+    int cols = l_editor_cols(l_ed);
+
     for (int i = 0; l_ed->char_buf[i] != 0; i++) {
         if (l_ed->char_buf[i] == 0x0a){
             x = 0;
             y++;
-        } else {
-            if (x < l_editor_cols(l_ed) && y < l_editor_rows(l_ed)) {
-                l_editor_set_char(l_ed, l_ed->char_buf[i], x, y);
-                x++;
-            }
+        } else if (x < cols && y < rows) {
+            l_ed->char_grid[(cols * y) + x] = l_ed->char_buf[i];
+            x++;
         }
+    }
+}
+
+int l_editor_update_renderer(L_EDITOR *l_ed)
+{
+    int rows = l_editor_rows(l_ed);
+    int cols = l_editor_cols(l_ed);
+
+    int isChanged = 0;
+
+    for (int y = 0; y < rows; y++) {
+        for (int x = 0; x < cols; x++) {
+
+            uint8_t current_c = l_ed->current_char_grid[(cols * y) + x];
+            uint8_t c = l_ed->char_grid[(cols * y) + x];
+            if (current_c != c) {
+                l_editor_put_char_on_renderer(l_ed, c, x, y);
+                l_ed->current_char_grid[(cols * y) + x] = c;
+                isChanged = 1;
+            }
+
+        }
+    }
+
+    if(isChanged) {
+        SDL_RenderPresent(l_ed->main_renderer);
     }
 }
 
 void l_editor_present(L_EDITOR *l_ed)
 {
-    SDL_RenderClear(l_ed->main_renderer);
-
-    int rows = l_editor_rows(l_ed);
-    int cols = l_editor_cols(l_ed);
-
-    for (int y = 0; y < rows; y++) {
-        for (int x = 0; x < cols; x++) {
-            l_editor_print_char(l_ed, l_editor_get_char(l_ed, x, y), x, y);
-        }
-    }
-
-    SDL_RenderPresent(l_ed->main_renderer);
+    l_editor_put_char_buf_on_grid(l_ed);
+    l_editor_update_renderer(l_ed); 
 }
 
 void start_handling_keyboard_events(L_EDITOR *l_ed)
 {
     int quit_loop = 0;
-    int i = 0;
     while(!quit_loop) {
         SDL_Event ev;
         while (SDL_PollEvent(&ev)) {
@@ -175,13 +186,12 @@ void start_handling_keyboard_events(L_EDITOR *l_ed)
             case SDL_TEXTINPUT:
                 if (strlen(ev.text.text) == 1 && (ev.text.text)[0] >= 0x20 && (ev.text.text)[0] <= 0x7e) {
                     strcat(l_ed->char_buf, ev.text.text);
-                    l_editor_put_char_buf_on_grid(l_ed);
                 }
                 break;
             }
-            l_editor_present(l_ed);
-            SDL_Delay(100);
         }
+        l_editor_present(l_ed);
+        SDL_Delay(10);
     }
 }
 
