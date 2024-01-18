@@ -77,7 +77,7 @@ L_EDITOR *create_assci_renderer(SDL_Window *window, int ptsize)
 
     l_ed->char_grid = (uint8_t *)malloc(L_EDITOR_CHAR_GRID_CAP);
     l_ed->current_char_grid = (uint8_t *)malloc(L_EDITOR_CHAR_GRID_CAP);
-    
+
     for (int i = 0; i < L_EDITOR_CHAR_GRID_CAP; i++) {
         l_ed->char_grid[i] = 0x20;
     }
@@ -125,6 +125,10 @@ void l_editor_put_char_buf_on_grid(L_EDITOR *l_ed)
     int rows = l_editor_rows(l_ed);
     int cols = l_editor_cols(l_ed);
 
+    for (int i = 0; i < L_EDITOR_CHAR_GRID_CAP; i++) {
+        l_ed->char_grid[i] = 0x20;
+    }
+
     for (int i = 0; l_ed->char_buf[i] != 0; i++) {
         if (l_ed->char_buf[i] == 0x0a){
             x = 0;
@@ -165,7 +169,7 @@ int l_editor_update_renderer(L_EDITOR *l_ed)
 void l_editor_present(L_EDITOR *l_ed)
 {
     l_editor_put_char_buf_on_grid(l_ed);
-    l_editor_update_renderer(l_ed); 
+    l_editor_update_renderer(l_ed);
 }
 
 void start_handling_keyboard_events(L_EDITOR *l_ed)
@@ -181,6 +185,8 @@ void start_handling_keyboard_events(L_EDITOR *l_ed)
             case SDL_KEYDOWN:
                 if (ev.key.keysym.scancode == SDL_SCANCODE_RETURN) {
                     strcat(l_ed->char_buf, "\x0a");
+                } else if (ev.key.keysym.scancode == SDL_SCANCODE_BACKSPACE) {
+                    l_ed->char_buf[strlen(l_ed->char_buf) - 1] = 0;
                 }
                 break;
             case SDL_TEXTINPUT:
